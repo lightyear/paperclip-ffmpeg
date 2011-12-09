@@ -10,6 +10,8 @@ module Paperclip
     # +whiny+ is true (which it is, by default. If +convert_options+ is
     # set, the options will be appended to the convert command upon video transcoding
     def initialize file, options = {}, attachment = nil
+      super
+      
       @convert_options = {
         :input => {},
         :output => { :y => nil }
@@ -66,7 +68,7 @@ module Paperclip
                 height = (width.to_f / (@meta[:aspect].to_f)).to_i
                 @convert_options[:output][:s] = "#{width.to_i}x#{height.to_i}"
               else
-                return nil
+                @convert_options[:output][:s] = "#{current_width.to_i}x#{current_height.to_i}"
               end
             elsif @shrink_only
               if current_width.to_i > target_width.to_i
@@ -75,7 +77,7 @@ module Paperclip
                 height = (width.to_f / (@meta[:aspect].to_f)).to_i
                 @convert_options[:output][:s] = "#{width.to_i}x#{height.to_i}"
               else
-                return nil
+                @convert_options[:output][:s] = "#{current_width.to_i}x#{current_height.to_i}"
               end
             elsif @pad_only
               # Keep aspect ratio
