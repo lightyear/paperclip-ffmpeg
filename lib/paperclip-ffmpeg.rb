@@ -42,6 +42,7 @@ module Paperclip
       @pad_only        = @keep_aspect    && @geometry[-1,1] == '#'
       @enlarge_only    = @keep_aspect    && @geometry[-1,1] == '<'
       @shrink_only     = @keep_aspect    && @geometry[-1,1] == '>'
+      @auto_rotate     = options[:auto_rotate].nil? ? false : options[:auto_rotate]
       @whiny           = options[:whiny].nil? ? true : options[:whiny]
       @format          = options[:format]
       @time            = options[:time].nil? ? 3 : options[:time]
@@ -114,6 +115,12 @@ module Paperclip
           end
         end
       end
+      if @meta[:rotation] && @meta[:rotation] != 0
+        case @meta[:rotation]
+        when 90
+          @convert_options[:output][:vf] = 'transpose=1'
+        end
+      end
       # Add format
       case @format
       when 'jpg', 'jpeg', 'png', 'gif' # Images
@@ -147,7 +154,8 @@ module Paperclip
     
     def identify
       meta = {}
-      command = "ffmpeg -i #{File.expand_path(@file.path)} 2>&1"
+      full_path = File.expand_path(@file.path)
+      command = "ffmpeg -i #{full_path} 2>&1"
       Paperclip.log(command)
       ffmpeg = IO.popen(command)
       ffmpeg.each("\r") do |line|
@@ -167,6 +175,16 @@ module Paperclip
           meta[:length] = $2.to_s + ":" + $3.to_s + ":" + $4.to_s
         end
       end
+      
+      if @auto_rotate
+        begin
+          exif = MiniExiftool.new(full_path)
+          meta[:rotation] = exif.rotation
+        rescue NameError
+          Paperclip.log('[ffmpeg] auto-rotation requires the mini_exiftool gem')
+        end
+      end
+      
       meta
     end
   end
