@@ -45,6 +45,7 @@ module Paperclip
       @whiny           = options[:whiny].nil? ? true : options[:whiny]
       @format          = options[:format]
       @time            = options[:time].nil? ? 3 : options[:time]
+      @nice            = options[:nice].nil? ? false : options[:nice]
       @current_format  = File.extname(@file.path)
       @basename        = File.basename(@file.path, @current_format)
       @meta            = identify
@@ -131,7 +132,12 @@ module Paperclip
       
       Paperclip.log("[ffmpeg] #{parameters}")
       begin
-        success = Paperclip.run("ffmpeg", parameters, :source => "#{File.expand_path(src.path)}", :dest => File.expand_path(dst.path), :swallow_stderr => true)
+        command = 'ffmpeg'
+        if @nice
+          parameters = "#{command} #{parameters}"
+          command = 'nice'
+        end
+        success = Paperclip.run(command, parameters, :source => "#{File.expand_path(src.path)}", :dest => File.expand_path(dst.path), :swallow_stderr => true)
       rescue Cocaine::ExitStatusError => e
         raise PaperclipError, "error while processing video for #{@basename}: #{e}" if @whiny
       end
