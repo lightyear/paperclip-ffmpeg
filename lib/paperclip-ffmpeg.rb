@@ -47,6 +47,7 @@ module Paperclip
       @format          = options[:format]
       @time            = options[:time].nil? ? 3 : options[:time]
       @nice            = options[:nice].nil? ? false : options[:nice]
+      @threads         = options[:threads].nil? ? 0 : options[:threads]
       @current_format  = File.extname(@file.path)
       @basename        = File.basename(@file.path, @current_format)
       @meta            = identify
@@ -122,8 +123,7 @@ module Paperclip
         end
       end
       # Add format
-      case @format
-      when 'jpg', 'jpeg', 'png', 'gif' # Images
+      if format_is_still_image?
         @convert_options[:input][:ss] = @time
         @convert_options[:input][:vframes] = 1
         @convert_options[:output][:f] = 'image2'
@@ -133,6 +133,7 @@ module Paperclip
       parameters << @convert_options[:input].map { |k,v| "-#{k.to_s} #{v} "}
       parameters << "-i :source"
       parameters << @convert_options[:output].map { |k,v| "-#{k.to_s} #{v} "}
+      parameters << "-threads #{@threads}" unless format_is_still_image?
       parameters << ":dest"
 
       parameters = parameters.flatten.compact.join(" ").strip.squeeze(" ")
@@ -186,6 +187,10 @@ module Paperclip
       end
       
       meta
+    end
+    
+    def format_is_still_image?
+      %w(jpg jpeg png gif).include?(@format)
     end
   end
   
